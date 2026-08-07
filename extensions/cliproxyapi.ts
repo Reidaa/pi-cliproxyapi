@@ -1,6 +1,11 @@
-import { createProvider, type Api, type ApiKeyCredential, type Model } from "@earendil-works/pi-ai";
-import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
-import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
+import {
+  anthropicMessagesApi,
+  createProvider,
+  openAIResponsesApi,
+  type Api,
+  type ApiKeyCredential,
+  type Model,
+} from "@earendil-works/pi-ai/compat";
 import { getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
 import { readStoredCredential, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
