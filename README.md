@@ -17,10 +17,13 @@ provider. The provider connects pi to a CLI Proxy API instance.
 ## Install
 
 ```bash
-pi install /home/thomas/workspace/pi-cliproxyapi
+pi install /path/to/pi-cliproxyapi
 # or, after you push it to a remote:
 pi install git:github.com/<user>/pi-cliproxyapi
 ```
+
+The package supports pi `0.83.x` and `0.84.x`. Restart pi after installing or
+updating the extension so the previous extension runtime is not reused.
 
 ## Configure
 
@@ -44,6 +47,18 @@ Control which models the proxy serves in the proxy configuration
 (`oauth-excluded-models` in `config.yaml`). The extension does not filter for
 availability.
 
+## Development
+
+```bash
+npm run check        # format check, lint, types and tests
+npm test             # vitest
+npm run lint         # oxlint
+npm run format       # oxfmt, writes in place
+npm run typecheck    # tsc --noEmit
+```
+
 ## Files
 
-- `extensions/cliproxyapi-models.ts` — the provider extension
+- `extensions/cliproxyapi.ts` — the provider extension
+- `tests/cliproxyapi.test.ts` — vitest tests for the extension
+- `.oxlintrc.json`, `.oxfmtrc.json` — oxlint and oxfmt configuration

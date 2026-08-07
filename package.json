@@ -1,16 +1,48 @@
 {
   "name": "pi-cliproxyapi",
   "version": "0.1.0",
-  "description": "Pi package that registers a CLI Proxy API provider with dynamic model discovery.",
-  "keywords": ["pi-package", "pi-extension", "cli-proxy-api", "provider"],
-  "license": "MIT",
   "private": false,
-  "pi": {
-    "extensions": ["./extensions"]
+  "description": "Pi package that registers a CLI Proxy API provider with dynamic model discovery.",
+  "keywords": [
+    "cli-proxy-api",
+    "pi-extension",
+    "pi-package",
+    "provider"
+  ],
+  "license": "MIT",
+  "files": [
+    "extensions",
+    "README.md"
+  ],
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsc",
+    "check": "oxfmt --check && oxlint && tsc && vitest run",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "0.84.1",
+    "@earendil-works/pi-coding-agent": "0.84.1",
+    "oxfmt": "^0.62.0",
+    "oxlint": "^1.77.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": "*",
-    "@earendil-works/pi-coding-agent": "*"
+    "@earendil-works/pi-ai": ">=0.83.0 <0.85.0",
+    "@earendil-works/pi-coding-agent": ">=0.83.0 <0.85.0"
   },
-  "files": ["extensions", "README.md"]
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ]
+  }
 }

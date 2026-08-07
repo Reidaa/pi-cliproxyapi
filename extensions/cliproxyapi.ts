@@ -1,12 +1,7 @@
-import {
-  anthropicMessagesApi,
-  createProvider,
-  getModels,
-  openAIResponsesApi,
-  type Api,
-  type ApiKeyCredential,
-  type Model,
-} from "@earendil-works/pi-ai";
+import { createProvider, type Api, type ApiKeyCredential, type Model } from "@earendil-works/pi-ai";
+import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
+import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
+import { getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
 import { readStoredCredential, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const PROVIDER_ID = "cliproxyapi";
@@ -22,7 +17,10 @@ const MODEL_TIMEOUT_MS = 10_000;
  * the id, because /v1/models returns ids only.
  */
 const CATALOG: Record<string, Model<Api>> = Object.fromEntries(
-  [...getModels("openai"), ...getModels("anthropic")].map((model) => [model.id, model]),
+  [...getBuiltinModels("openai"), ...getBuiltinModels("anthropic")].map((model) => [
+    model.id,
+    model,
+  ]),
 );
 
 /**
@@ -118,7 +116,7 @@ async function fetchModels(
     .filter((id): id is string => typeof id === "string" && id.length > 0)
     .filter((id) => !isExcluded(id));
 
-  const uniqueIds = [...new Set(ids)].sort((a, b) => a.localeCompare(b));
+  const uniqueIds = [...new Set(ids)].toSorted((a, b) => a.localeCompare(b));
   if (uniqueIds.length === 0) {
     throw new Error("CLI Proxy API returned no compatible chat models");
   }
@@ -167,9 +165,8 @@ export default async function (pi: ExtensionAPI) {
               enteredBaseUrl || configuredBaseUrl(currentCredential) || "",
             );
             const apiKey =
-              (
-                await interaction.prompt({ type: "secret", message: "CLI Proxy API key" })
-              ).trim() || configuredApiKey(currentCredential);
+              (await interaction.prompt({ type: "secret", message: "CLI Proxy API key" })).trim() ||
+              configuredApiKey(currentCredential);
             if (!apiKey) throw new Error("CLI Proxy API key is required");
 
             interaction.notify({
