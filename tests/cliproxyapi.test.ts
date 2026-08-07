@@ -7,7 +7,30 @@ interface RegisteredProvider {
   id: string;
   stream: unknown;
   streamSimple: unknown;
-  getModels(): Array<{ id: string; api: string; baseUrl: string }>;
+  getModels(): Array<{
+    id: string;
+    api: string;
+    baseUrl: string;
+    name: string;
+    contextWindow: number;
+    maxTokens: number;
+    cost: { input: number };
+  }>;
+}
+
+/** Routes the proxy and the models.dev request of a single test run. */
+function stubFetch(models: string[], modelsDev: unknown) {
+  const fetch = vi.fn<(url: string) => Promise<Response>>(async (url) => {
+    const body = String(url).includes("models.dev")
+      ? modelsDev
+      : { data: models.map((id) => ({ id })) };
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  });
+  vi.stubGlobal("fetch", fetch);
+  return fetch;
 }
 
 /**
@@ -63,23 +86,7 @@ describe("cliproxyapi extension", () => {
   it("routes discovered models through the supported proxy APIs", async () => {
     vi.stubEnv("CLI_PROXY_API_BASE_URL", "https://proxy.example.com:8317");
     vi.stubEnv("CLI_PROXY_API_API_KEY", "test-key");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({
-              data: [
-                { id: "gemini-2.5-pro" },
-                { id: "gpt-image-1" },
-                { id: "gpt-5.6-sol" },
-                { id: "claude-opus-5" },
-              ],
-            }),
-            { status: 200, headers: { "content-type": "application/json" } },
-          ),
-      ),
-    );
+    stubFetch(["gemini-2.5-pro", "gpt-image-1", "gpt-5.6-sol", "claude-opus-5"], {});
 
     const provider = await loadProvider();
 
@@ -100,5 +107,41 @@ describe("cliproxyapi extension", () => {
         baseUrl: "https://proxy.example.com:8317/v1",
       },
     ]);
+  });
+
+  it("takes metadata from models.dev for ids pi does not know", async () => {
+    vi.stubEnv("CLI_PROXY_API_BASE_URL", "https://proxy.example.com:8317");
+    vi.stubEnv("CLI_PROXY_API_API_KEY", "test-key");
+    stubFetch(["moonshotai/kimi-k3", "codex-auto-review"], {
+      moonshotai: {
+        models: {
+          "kimi-k3": {
+            name: "Kimi K3",
+            reasoning: true,
+            modalities: { input: ["text", "image"] },
+            cost: { input: 3, output: 15 },
+            limit: { context: 1_048_576, output: 131_072 },
+          },
+        },
+      },
+    });
+
+    const models = await loadProvider().then((provider) => provider.getModels());
+
+    expect(models[1]).toMatchObject({
+      id: "moonshotai/kimi-k3",
+      name: "Kimi K3",
+      api: "openai-responses",
+      baseUrl: "https://proxy.example.com:8317/v1",
+      contextWindow: 1_048_576,
+      maxTokens: 131_072,
+      cost: { input: 3 },
+    });
+    // Proxy-internal ids are on no catalog and keep the conservative fallback.
+    expect(models[0]).toMatchObject({
+      id: "codex-auto-review",
+      name: "codex-auto-review (CLI Proxy API)",
+      contextWindow: 200_000,
+    });
   });
 });

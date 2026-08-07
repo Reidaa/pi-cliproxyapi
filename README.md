@@ -9,8 +9,9 @@ provider. The provider connects pi to a CLI Proxy API instance.
 - Routes `claude-*` models to the `anthropic-messages` API and all other
   models to the `openai-responses` API.
 - Takes model metadata (context window, output limit, price, thinking levels)
-  from the pi catalogs for OpenAI and Anthropic. Unknown ids get conservative
-  defaults.
+  from the pi catalogs for OpenAI and Anthropic. For ids that are not in those
+  catalogs it reads the metadata from [models.dev](https://models.dev). Ids
+  that neither source knows get conservative defaults.
 - Excludes `gpt-image-*` models, because pi cannot use them as chat models.
 - Adds no default model. If discovery fails, the provider offers no models.
 
@@ -47,6 +48,29 @@ Control which models the proxy serves in the proxy configuration
 (`oauth-excluded-models` in `config.yaml`). The extension does not filter for
 availability.
 
+## Model metadata
+
+Metadata is resolved in this order:
+
+1. The pi builtin catalogs for OpenAI and Anthropic. They also carry the
+   thinking levels, so they stay authoritative.
+2. The models.dev catalog, for everything else the proxy serves (DeepSeek,
+   Kimi, Qwen and others).
+3. A conservative fallback (200k context, 32k output, zero cost) for ids that
+   are on no catalog, such as proxy-internal models.
+
+The models.dev catalog is downloaded only when the discovered list contains an
+id the pi catalogs do not know. It is cached in
+`<agent dir>/cliproxyapi-models-dev.json` for 24 hours. If the download fails,
+the extension uses the stale cache, and the fallback if there is no cache.
+
+The same id is listed by many providers on models.dev with different prices
+and limits. The vendor that publishes the model wins over resellers; the
+provider order is in `src/models-dev.ts`.
+
+models.dev carries no API protocol and no thinking levels, so the routing of
+`claude-*` models to `anthropic-messages` stays in the extension.
+
 ## Development
 
 ```bash
@@ -60,5 +84,6 @@ npm run typecheck    # tsc --noEmit
 ## Files
 
 - `extensions/cliproxyapi.ts` — the provider extension
-- `tests/cliproxyapi.test.ts` — vitest tests for the extension
+- `src/models-dev.ts` — the models.dev metadata catalog with disk cache
+- `tests/` — vitest tests for the extension and the catalog
 - `.oxlintrc.json`, `.oxfmtrc.json` — oxlint and oxfmt configuration

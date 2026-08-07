@@ -3,6 +3,11 @@ import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messag
 import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
 import { getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
 import { readStoredCredential, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+  loadModelsDevCatalog,
+  type ModelsDevCatalog,
+  type ModelsDevMetadata,
+} from "../src/models-dev.ts";
 
 const PROVIDER_ID = "cliproxyapi";
 const BASE_URL_ENV = "CLI_PROXY_API_BASE_URL";
@@ -14,7 +19,8 @@ const MODEL_TIMEOUT_MS = 10_000;
  * models are routed to the matching API rather than flattened onto
  * openai-completions. Metadata (context window, output limit, pricing,
  * thinking levels) is taken from pi's own catalogs instead of guessed from
- * the id, because /v1/models returns ids only.
+ * the id, because /v1/models returns ids only. Ids pi does not know are
+ * looked up on models.dev.
  */
 const CATALOG: Record<string, Model<Api>> = Object.fromEntries(
   [...getBuiltinModels("openai"), ...getBuiltinModels("anthropic")].map((model) => [
@@ -38,17 +44,20 @@ interface RemoteModelList {
   data?: RemoteModel[];
 }
 
+/** The proxy speaks Anthropic's protocol for Claude models and Responses for the rest. */
+const apiFor = (id: string): Api =>
+  id.startsWith("claude-") ? "anthropic-messages" : "openai-responses";
+
 /**
- * Fallback for an id absent from pi's catalogs. Conservative on purpose: a
- * too-large context window causes hard request failures, a too-small one only
- * compacts early.
+ * Fallback for an id absent from pi's catalogs and from models.dev.
+ * Conservative on purpose: a too-large context window causes hard request
+ * failures, a too-small one only compacts early.
  */
 function unknownModel(id: string): Model<Api> {
-  const anthropic = id.startsWith("claude-");
   return {
     id,
     name: `${id} (CLI Proxy API)`,
-    api: anthropic ? "anthropic-messages" : "openai-responses",
+    api: apiFor(id),
     provider: PROVIDER_ID,
     baseUrl: "",
     reasoning: true,
@@ -59,12 +68,18 @@ function unknownModel(id: string): Model<Api> {
   } as Model<Api>;
 }
 
+/** models.dev carries no API protocol or thinking levels, so routing stays local. */
+function modelsDevModel(id: string, metadata: ModelsDevMetadata): Model<Api> {
+  return { ...metadata, id, api: apiFor(id), provider: PROVIDER_ID, baseUrl: "" } as Model<Api>;
+}
+
 /**
  * The Anthropic SDK appends /v1 itself, so it needs the origin; the OpenAI
  * Responses API is called at the /v1 root.
  */
-function modelFor(id: string, baseUrl: string): Model<Api> {
-  const base = CATALOG[id] ?? unknownModel(id);
+function modelFor(id: string, baseUrl: string, modelsDev?: ModelsDevCatalog): Model<Api> {
+  const external = CATALOG[id] ? undefined : modelsDev?.get(id);
+  const base = CATALOG[id] ?? (external ? modelsDevModel(id, external) : unknownModel(id));
   const anthropic = base.api === "anthropic-messages";
   return {
     ...base,
@@ -121,7 +136,12 @@ async function fetchModels(
     throw new Error("CLI Proxy API returned no compatible chat models");
   }
 
-  return uniqueIds.map((id) => modelFor(id, baseUrl));
+  // Only pay for the models.dev download when pi's own catalogs come up short.
+  const modelsDev = uniqueIds.some((id) => !CATALOG[id])
+    ? await loadModelsDevCatalog(parentSignal)
+    : undefined;
+
+  return uniqueIds.map((id) => modelFor(id, baseUrl, modelsDev));
 }
 
 export default async function (pi: ExtensionAPI) {
