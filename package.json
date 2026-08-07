@@ -1,0 +1,16 @@
+{
+  "name": "pi-cliapiproxy",
+  "version": "0.1.0",
+  "description": "Pi package that registers a CLI API Proxy provider with dynamic model discovery.",
+  "keywords": ["pi-package", "pi-extension", "cli-api-proxy", "provider"],
+  "license": "MIT",
+  "private": false,
+  "pi": {
+    "extensions": ["./extensions"]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "files": ["extensions", "README.md"]
+}
