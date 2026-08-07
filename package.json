@@ -1,8 +1,8 @@
 {
-  "name": "pi-cliapiproxy",
+  "name": "pi-cliproxyapi",
   "version": "0.1.0",
-  "description": "Pi package that registers a CLI API Proxy provider with dynamic model discovery.",
-  "keywords": ["pi-package", "pi-extension", "cli-api-proxy", "provider"],
+  "description": "Pi package that registers a CLI Proxy API provider with dynamic model discovery.",
+  "keywords": ["pi-package", "pi-extension", "cli-proxy-api", "provider"],
   "license": "MIT",
   "private": false,
   "pi": {

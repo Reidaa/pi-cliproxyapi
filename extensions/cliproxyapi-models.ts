@@ -9,9 +9,9 @@ import {
 } from "@earendil-works/pi-ai";
 import { readStoredCredential, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-const PROVIDER_ID = "cliapiproxy";
-const BASE_URL_ENV = "CLI_API_PROXY_BASE_URL";
-const API_KEY_ENV = "CLI_API_PROXY_API_KEY";
+const PROVIDER_ID = "cliproxyapi";
+const BASE_URL_ENV = "CLI_PROXY_API_BASE_URL";
+const API_KEY_ENV = "CLI_PROXY_API_API_KEY";
 const MODEL_TIMEOUT_MS = 10_000;
 
 /**
@@ -49,7 +49,7 @@ function unknownModel(id: string): Model<Api> {
   const anthropic = id.startsWith("claude-");
   return {
     id,
-    name: `${id} (CLI API Proxy)`,
+    name: `${id} (CLI Proxy API)`,
     api: anthropic ? "anthropic-messages" : "openai-responses",
     provider: PROVIDER_ID,
     baseUrl: "",
@@ -78,7 +78,7 @@ function modelFor(id: string, baseUrl: string): Model<Api> {
 
 function normalizeBaseUrl(value: string): string {
   const trimmed = value.trim().replace(/\/+$/, "");
-  if (!trimmed) throw new Error("CLI API Proxy base URL is required");
+  if (!trimmed) throw new Error("CLI Proxy API base URL is required");
   return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
@@ -105,12 +105,12 @@ async function fetchModels(
   });
 
   if (!response.ok) {
-    throw new Error(`CLI API Proxy model discovery failed: HTTP ${response.status}`);
+    throw new Error(`CLI Proxy API model discovery failed: HTTP ${response.status}`);
   }
 
   const payload = (await response.json()) as RemoteModelList;
   if (!Array.isArray(payload.data)) {
-    throw new Error("CLI API Proxy returned an invalid model list");
+    throw new Error("CLI Proxy API returned an invalid model list");
   }
 
   const ids = payload.data
@@ -120,7 +120,7 @@ async function fetchModels(
 
   const uniqueIds = [...new Set(ids)].sort((a, b) => a.localeCompare(b));
   if (uniqueIds.length === 0) {
-    throw new Error("CLI API Proxy returned no compatible chat models");
+    throw new Error("CLI Proxy API returned no compatible chat models");
   }
 
   return uniqueIds.map((id) => modelFor(id, baseUrl));
@@ -149,17 +149,17 @@ export default async function (pi: ExtensionAPI) {
   pi.registerProvider(
     createProvider({
       id: PROVIDER_ID,
-      name: "CLI API Proxy",
+      name: "CLI Proxy API",
       baseUrl: startupBaseUrl,
       auth: {
         apiKey: {
-          name: "CLI API Proxy",
+          name: "CLI Proxy API",
           async login(interaction) {
             const current = readStoredCredential(PROVIDER_ID);
             const currentCredential = current?.type === "api_key" ? current : undefined;
             const enteredBaseUrl = await interaction.prompt({
               type: "text",
-              message: "CLI API Proxy base URL",
+              message: "CLI Proxy API base URL",
               placeholder:
                 configuredBaseUrl(currentCredential) ?? "https://proxy.example.com:8317/v1",
             });
@@ -168,9 +168,9 @@ export default async function (pi: ExtensionAPI) {
             );
             const apiKey =
               (
-                await interaction.prompt({ type: "secret", message: "CLI API Proxy API key" })
+                await interaction.prompt({ type: "secret", message: "CLI Proxy API key" })
               ).trim() || configuredApiKey(currentCredential);
-            if (!apiKey) throw new Error("CLI API Proxy API key is required");
+            if (!apiKey) throw new Error("CLI Proxy API key is required");
 
             interaction.notify({
               type: "progress",
@@ -186,7 +186,7 @@ export default async function (pi: ExtensionAPI) {
             return {
               type: "api_key",
               source: credential
-                ? "stored CLI API Proxy settings"
+                ? "stored CLI Proxy API settings"
                 : `${BASE_URL_ENV} and ${API_KEY_ENV}`,
             };
           },
@@ -200,7 +200,7 @@ export default async function (pi: ExtensionAPI) {
               auth: { apiKey },
               env: { ...credential?.env, [BASE_URL_ENV]: baseUrl },
               source: credential
-                ? "stored CLI API Proxy settings"
+                ? "stored CLI Proxy API settings"
                 : `${BASE_URL_ENV} and ${API_KEY_ENV}`,
             };
           },
@@ -209,7 +209,7 @@ export default async function (pi: ExtensionAPI) {
       models: startupModels,
       async fetchModels(context) {
         if (context.credential?.type !== "api_key") {
-          throw new Error("CLI API Proxy settings are not configured");
+          throw new Error("CLI Proxy API settings are not configured");
         }
         const baseUrl = configuredBaseUrl(context.credential);
         const apiKey = configuredApiKey(context.credential);

@@ -1,7 +1,7 @@
-# pi-cliapiproxy
+# pi-cliproxyapi
 
-A pi package with one extension. The extension registers the `cliapiproxy`
-provider. The provider connects pi to a CLI API Proxy instance.
+A pi package with one extension. The extension registers the `cliproxyapi`
+provider. The provider connects pi to a CLI Proxy API instance.
 
 ## What the extension does
 
@@ -17,9 +17,9 @@ provider. The provider connects pi to a CLI API Proxy instance.
 ## Install
 
 ```bash
-pi install /home/thomas/workspace/pi-cliapiproxy
+pi install /home/thomas/workspace/pi-cliproxyapi
 # or, after you push it to a remote:
-pi install git:github.com/<user>/pi-cliapiproxy
+pi install git:github.com/<user>/pi-cliproxyapi
 ```
 
 ## Configure
@@ -27,13 +27,13 @@ pi install git:github.com/<user>/pi-cliapiproxy
 Run the login flow and give the base URL and the API key:
 
 ```
-/login cliapiproxy
+/login cliproxyapi
 ```
 
 Or set the environment variables:
 
-- `CLI_API_PROXY_BASE_URL` — for example `https://proxy.example.com:8317/v1`
-- `CLI_API_PROXY_API_KEY`
+- `CLI_PROXY_API_BASE_URL` — for example `https://proxy.example.com:8317/v1`
+- `CLI_PROXY_API_KEY`
 
 The extension adds `/v1` to the base URL if it is not there. The Anthropic SDK
 adds `/v1` by itself, so the extension removes it for Anthropic models.
@@ -46,4 +46,4 @@ availability.
 
 ## Files
 
-- `extensions/cliapiproxy-models.ts` — the provider extension
+- `extensions/cliproxyapi-models.ts` — the provider extension
